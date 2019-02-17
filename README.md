@@ -13,7 +13,7 @@ There is no publicly available implementation of the Deep Autoencoding Gaussian 
 
 We use Naul's RNN autoencoder architecture, with changes made to the following to accommodate the additional estimation network: 
 - Autoencoder network architecture is defined in `autoencoder.py`
-- Training parameters are defined in `keras_utils.py`
+- Training parameters are defined in `keras_util.py`
 - Light curve data are stored under `./data/asassn/`
 - Model weights are saved in `./keras_logs`
 
