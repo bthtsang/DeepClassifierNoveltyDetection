@@ -144,8 +144,17 @@ def parse_model_args(arg_dict=None):
     parser.add_argument("--survey_files", type=str, nargs='*')
     parser.add_argument('--noisify', dest='noisify', action='store_true')
     parser.add_argument('--period_fold', dest='period_fold', action='store_true')
+
+    ### The following are added for the estimation network.
+    parser.add_argument("--estnet_size", type=int, nargs="+") # format: list of hidden layer size
+    parser.add_argument("--estnet_drop_frac", type=float, default=0.0)
+    parser.add_argument("--num_classes", type=int, default=9) # number of GMM components
+    parser.add_argument("--lambda1", type=float, default=1e-1)
+    parser.add_argument("--lambda2", type=float, default=1e-4)
+    parser.add_argument('--gmm_on', dest='gmm_on', action='store_true')
     parser.set_defaults(even=False, bidirectional=False, noisify=False,
                         period_fold=False)
+
     # Don't read argv if arg_dict present
     args = parser.parse_args(None if arg_dict is None else [])
 
@@ -164,8 +173,8 @@ def parse_model_args(arg_dict=None):
 def get_run_id(model_type, size, num_layers, lr, drop_frac=0.0, embedding=None,
                decode_type=None, decode_layers=None, bidirectional=False, **kwargs):
     """Generate unique ID from model params."""
-    run = "{}_{:03d}_x{}_{:1.0e}_drop{}".format(model_type, size, num_layers, lr,
-                                                int(100 * drop_frac)).replace('e-', 'm')
+    run = "{}_{:03d}_x{}_{:1.0e}_drop{}_nepoch{}".format(model_type, size, num_layers, lr,
+                                                int(100 * drop_frac), kwargs['nb_epoch']).replace('e-', 'm')
     if embedding:
         run += '_emb{}'.format(embedding)
     if decode_type:
@@ -174,6 +183,16 @@ def get_run_id(model_type, size, num_layers, lr, drop_frac=0.0, embedding=None,
             run += '_x{}'.format(decode_layers)
     if bidirectional:
         run += '_bidir'
+
+    # Appending GMM-specific hyperparameters to the name of the run.
+    if (kwargs['gmm_on']):
+        run += '_gmmon'
+
+        estnet_size = kwargs['estnet_size']
+        estsize = "_".join(str(s) for s in estnet_size)
+        run += '_estnet{}_estdrop{}_'.format(estsize, int(100*kwargs['estnet_drop_frac']))
+
+        run += 'l1{}_l2{}'.format(kwargs['lambda1'], kwargs['lambda2']).replace('e-', 'm')
 
     return run
 
@@ -198,8 +217,11 @@ def train_and_log(X, Y, run, model, nb_epoch, batch_size, lr, loss, sim_type, me
     optimizer = Adam(lr=lr if not finetune_rate else finetune_rate)
     if gpu_frac is not None:
         limited_memory_session(gpu_frac)
-    model.compile(optimizer=optimizer, loss=loss, metrics=metrics,
-                  sample_weight_mode='temporal' if sample_weight is not None else None)
+
+    # When GMM is on, the keras model is compiled in survey_rnngmm_classifier.main
+    if (not kwargs['gmm_on']):
+      model.compile(optimizer=optimizer, loss=loss, metrics=metrics,
+                    sample_weight_mode='temporal' if sample_weight is not None else None)
 
     log_dir = os.path.join(os.getcwd(), 'keras_logs', sim_type, run)
     weights_path = os.path.join(log_dir, 'weights.h5')
@@ -228,11 +250,15 @@ def train_and_log(X, Y, run, model, nb_epoch, batch_size, lr, loss, sim_type, me
                   sort_keys=True, indent=2)
         if pretrain_weights:
             model.load_weights(pretrain_weights, by_name=True)
+
+        # Output the keras model 
+        plot_model(model, to_file=log_dir+"/model.svg", show_shapes=True, show_layer_names=True)
+
         if not noisify:
             history = model.fit(X, Y, nb_epoch=nb_epoch, batch_size=batch_size,
                                 sample_weight=sample_weight,
                                 callbacks=[Progbar(),
-                                           TensorBoard(log_dir=log_dir, write_graph=False),
+                                           TensorBoard(log_dir=log_dir, write_graph=True),
                                            TimedCSVLogger(os.path.join(log_dir, 'training.csv'), append=True),
 #                                           EarlyStopping(patience=patience),
                                            ModelCheckpoint(weights_path, save_weights_only=True),
