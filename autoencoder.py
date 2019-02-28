@@ -138,6 +138,10 @@ def main(args=None):
                                    sample_weight=sample_weight, **vars(args))
     return X, Y, X_raw, model, args
 
+def extract_features(input_list):
+  x, x_dash, z_c, supports = input_list
+  z_r = loss_features([x, x_dash])
+  return K.concatenate([z_c, z_r, supports], axis=1)
 
 if __name__ == '__main__':
     X, Y, X_raw, model, args = main()
