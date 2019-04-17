@@ -39,7 +39,7 @@ $ python survey_rnngmm_classifier.py --batch_size 500 --nb_epoch 250 --model_typ
 At first sight the above command may look overwhelming, here's a list explaining what each parameter controls.
 - Input/Output parameters:
   - `--sim_type`: name of output directory, to be appended after `./keras_logs/`. In the above example, training results and neural network weights will be stored under `./keras_logs/asassn/`. 
-  - `--survey_files`: location of input light curves. Example code for converting raw light curves into a single pkl file can be found in `light_curve.py`.
+  - `--survey_files`: location of the pkl file containing input light curves. Example code for converting raw light curves into a single pkl file can be found in `light_curve.py`.
 - Autoencoder parameters:
   - `--batch_size`: size of the minibatch (number of light curve sequences) used in training. 
   - `--nb_epoch`: number of epochs to train the joint network for; in the case of sequential training, this controls the number of epochs for autoencoder training.
@@ -49,7 +49,7 @@ At first sight the above command may look overwhelming, here's a list explaining
   - `--embedding`: embedding size for the autoencoder.
   - `--n_min` and `--n_max`: minimum and maximum number of observational epochs per light curve sequence. We set both to be 200 in the current work.
   - `--period_fold`: whether to phase-fold input light curves. Remove this flag for training without period-folding the light curves. 
-  - `--drop_frac`: dropout rate of the RNN layers.
+  - `--drop_frac`: dropout rate of the RNN layers. Set `--drop_frac 0.0` to disable the dropout layer.
 - Estimation network parameters:
   - `--gmm_on`: on switch for joint training, remove this flag for sequential training.
   - `--lambda1`: coefficient lambda in front of the GMM loss `L_GMM` (Equation (6)). 
