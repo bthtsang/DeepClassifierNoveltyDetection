@@ -105,8 +105,8 @@ class GMM:
     energies = tf.matmul(energies, z_centered)
     energies = tf.squeeze(phi_exp_dims * tf.exp(-0.5*energies), axis=[2, 3])
 
-    energies_divided_by = tf.expand_dims(tf.sqrt(2.0*np.pi*tf.matrix_determinant(self.sigma)), axis=0) + 1e-12
-    energies = tf.reduce_sum(energies / energies_divided_by, axis=1) + 1e-12
+    energies_divided_by = tf.expand_dims(tf.sqrt(2.0*np.pi*tf.matrix_determinant(self.sigma)), axis=0)
+    energies = tf.reduce_sum(energies / energies_divided_by, axis=1)
     energies = -1.0*tf.log(energies)
 
     energies = energies[:, None]
