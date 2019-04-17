@@ -76,8 +76,7 @@ def plot_confusion_matrix(y, y_pred, classnames, filename=None):
 def main(args=None):
   args = parse_model_args(args)
 
-  if (args.embedding >= 16):
-    K.set_floatx('float64')
+  K.set_floatx('float64')
 
   run = get_run_id(**vars(args))
   log_dir = os.path.join(os.getcwd(), 'keras_logs', args.sim_type, run)
