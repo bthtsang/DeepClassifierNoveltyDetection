@@ -66,8 +66,11 @@ def main(args=None):
     if (args.embedding >= 16):
       K.set_floatx('float64')
 
+    run = ku.get_run_id(**vars(args))
+
     if not args.survey_files:
         raise ValueError("No survey files given")
+
     lc_lists = [joblib.load(f) for f in args.survey_files]
     n_reps = [max(len(y) for y in lc_lists) // len(x) for x in lc_lists]
     combined = sum([x * i for x, i in zip(lc_lists, n_reps)], [])
@@ -90,22 +93,17 @@ def main(args=None):
         lc.label = "RRCD"
     top_classes = ['SR', 'RRAB', 'RRCD', 'M', 'ROT', 'ECL', 'CEPH', 'DSCT']
 
-    if (args.gmm_on):
-      gmm = GMM(args.num_classes, args.embedding+5)
-
     print ("Number of raw LCs:", len(combined))
 
     if args.lomb_score:
         combined = [lc for lc in combined if lc.best_score >= args.lomb_score]
     if args.ss_resid:
         combined = [lc for lc in combined if lc.ss_resid <= args.ss_resid]
-        combined = [lc for lc in combined if float(class_probability[lc.name.split("/")[-1][2:-4]]) >= 0.9]
-
-    print ("Number higher than ss_resid:", len(combined))
+    if args.class_prob:
+        combined = [lc for lc in combined if float(class_probability[lc.name.split("/")[-1][2:-4]]) >= args.class_prob]
 
     # Select only superclasses for training
     combined = [lc for lc in combined if lc.label in top_classes]
-    print ("Number in top_classes:", len(combined))
 
     split = [el for lc in combined for el in lc.split(args.n_min, args.n_max)]
     if args.period_fold:
@@ -118,8 +116,6 @@ def main(args=None):
     periods = np.array([np.log10(lc.p) for lc in split])
     periods = periods.reshape(len(split), 1)
 
-    print ("X_list shape (after n_min/max split)", len(X_list))
-
     X_raw = pad_sequences(X_list, value=np.nan, dtype='float64', padding='post')
 
     model_type_dict = {'gru': GRU, 'lstm': LSTM, 'vanilla': SimpleRNN}
@@ -127,8 +123,6 @@ def main(args=None):
 
     y = y[~wrong_units]
     periods = periods[~wrong_units]
-
-    print ("period's range", np.amin(periods), np.amax(periods))
 
     # Prepare the indices for training and validation
     train, valid = list(StratifiedKFold(n_splits=5, shuffle=True, random_state=SEED).split(X, y))[0]
@@ -138,20 +132,29 @@ def main(args=None):
     means_valid = means[valid]
     scales_valid = scales[valid]
     periods_valid = periods[valid]
-    supports_valid = np.concatenate((means_valid, scales_valid, periods_valid), axis=1)
     energy_dummy_valid = np.zeros((X_valid.shape[0], 1))
     X_err_valid = X_err[valid]
-    sample_weight_valid = 1. / X_err_valid**2
+    sample_weight_valid = 1. / X_err_valid
 
     X = X[train]
     y = y[train]
     means = means[train]
     scales = scales[train]
     periods = periods[train]
-    supports = np.concatenate((means, scales, periods), axis=1)
     energy_dummy = np.zeros((X.shape[0], 1))
     X_err = X_err[train]
-    sample_weight = 1. / X_err**2
+    sample_weight = 1. / X_err
+
+    supports_valid = np.concatenate((means_valid, scales_valid, periods_valid), axis=1)
+    supports = np.concatenate((means, scales, periods), axis=1)
+
+    num_supports_train = supports.shape[-1]
+    num_supports_valid = supports_valid.shape[-1]
+    assert(num_supports_train == num_supports_valid)
+    num_additional = num_supports_train + 2 # 2 for reconstruction error
+
+    if (args.gmm_on):
+      gmm = GMM(args.num_classes, args.embedding+num_additional)
 
     ### Covert labels into one-hot vectors for training
     label_encoder = LabelEncoder()
@@ -166,19 +169,13 @@ def main(args=None):
     valid_y_encoded = label_encoder.transform(y_valid)
     valid_y   = np_utils.to_categorical(valid_y_encoded)
 
-    print ("X_raw shape", X_raw.shape)
-    print ("Num train", train.shape)
-    print ("Num valid", valid.shape)
-    print ("mean", means.shape)
-
     main_input = Input(shape=(X.shape[1], 2), name='main_input') # dim: (200, 2) = dt, mag
     aux_input  = Input(shape=(X.shape[1], 1), name='aux_input') # dim: (200, 1) = dt's
 
+    model_input = [main_input, aux_input]
     if (args.gmm_on):
-      support_input = Input(shape=(3,), name='support_input') 
+      support_input = Input(shape=(num_supports_train,), name='support_input') 
       model_input = [main_input, aux_input, support_input]
-    else:
-      model_input = [main_input, aux_input]
 
     encode = encoder(main_input, layer=model_type_dict[args.model_type], 
                      output_size=args.embedding, **vars(args))
@@ -188,10 +185,13 @@ def main(args=None):
                                            else args.model_type],
                      n_step=X.shape[1], aux_input=aux_input,
                      **{k: v for k, v in vars(args).items() if k != 'num_layers'})
+    optimizer = Adam(lr=args.lr if not args.finetune_rate else args.finetune_rate)
 
-    run = ku.get_run_id(**vars(args))
     if (not args.gmm_on):
       model = Model(model_input, decode)
+
+      model.compile(optimizer=optimizer, loss='mse',
+                    sample_weight_mode='temporal')
 
     else: 
       est_net = EstimationNet(args.estnet_size, K.tanh)
@@ -206,7 +206,7 @@ def main(args=None):
       print ("gamma shape", gamma.shape)
 
       sigma_i = Lambda(lambda x: gmm.fit(x[0], x[1]), 
-                       output_shape=(args.num_classes, args.embedding+5, args.embedding+5), 
+                       output_shape=(args.num_classes, args.embedding+num_additional, args.embedding+num_additional), 
                        name="sigma_i")([z_both, gamma])
 
       energy = Lambda(lambda x: gmm.energy(x[0], x[1]), name="energy")([z_both, sigma_i])
