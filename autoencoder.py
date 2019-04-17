@@ -3,6 +3,7 @@ np.random.seed(0)
 from keras.layers import (Input, Dense, TimeDistributed, LSTM, GRU, Dropout, merge,
                           Flatten, RepeatVector, Recurrent, Bidirectional, SimpleRNN)
 from keras.models import Model
+import keras.backend as K
 
 import sample_data
 import keras_util as ku
@@ -137,6 +138,31 @@ def main(args=None):
                                    X_raw[train, :, 1:2], run, model,
                                    sample_weight=sample_weight, **vars(args))
     return X, Y, X_raw, model, args
+
+def loss_features(x_and_x_dash):
+  def euclid_norm(x):
+    return K.sqrt(K.sum(K.square(x), axis=1))
+
+  x, x_dash = x_and_x_dash
+
+  # Calculate Euclid norm, distance
+  norm_x = euclid_norm(x)
+  norm_x_dash = euclid_norm(x_dash)
+  dist_x = euclid_norm(x - x_dash)
+  dot_x = K.sum(x*x_dash, axis=1)
+
+  # Based on the original paper, features of reconstraction error
+  # are composed of these loss functions:
+  #  1. loss_E : relative Euclidean distance
+  #  2. loss_C : cosine similarity
+  min_val = 1.0e-3
+  loss_E = dist_x / (norm_x + min_val)
+  loss_C = 0.5 * (1.0 - dot_x / (norm_x*norm_x_dash + min_val))
+
+  loss_E = K.reshape(loss_E, (-1, 1))
+  loss_C = K.reshape(loss_C, (-1, 1))
+
+  return K.concatenate([loss_E, loss_C], axis=1)
 
 def extract_features(input_list):
   x, x_dash, z_c, supports = input_list
