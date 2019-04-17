@@ -15,6 +15,7 @@ from collections import Iterable, OrderedDict
 from keras.optimizers import Adam
 from keras.callbacks import (Callback, TensorBoard, EarlyStopping,
                              ModelCheckpoint, CSVLogger, ProgbarLogger)
+from keras.utils.vis_utils import plot_model
 
 if 'get_ipython' in vars() and get_ipython().__class__.__name__ == 'ZMQInteractiveShell':
     from keras_tqdm import TQDMNotebookCallback as Progbar
@@ -114,6 +115,7 @@ def parse_model_args(arg_dict=None):
     parser.add_argument("--drop_frac", type=float)
     parser.add_argument("--batch_size", type=int, default=500)
     parser.add_argument("--nb_epoch", type=int, default=250)
+    parser.add_argument("--cls_epoch", type=int, default=250) # Epochs to train the estimation network for in the sequential training case
     parser.add_argument("--lr", type=float)
     parser.add_argument("--loss", type=str, default='mse')
     parser.add_argument("--loss_weights", type=float, nargs='*')
@@ -138,6 +140,7 @@ def parse_model_args(arg_dict=None):
     parser.add_argument("--m_max", type=float, default=20.)
     parser.add_argument("--lomb_score", type=float, default=None)
     parser.add_argument("--ss_resid", type=float, default=None)
+    parser.add_argument("--class_prob", type=float, default=None) # optional ASAS-SN classification probability filter
     parser.add_argument('--pretrain', type=str, default=None)
     parser.add_argument('--finetune_rate', type=float, default=None)
     parser.add_argument('--bidirectional', dest='bidirectional', action='store_true')
@@ -150,7 +153,6 @@ def parse_model_args(arg_dict=None):
     parser.add_argument("--estnet_drop_frac", type=float, default=0.0)
     parser.add_argument("--num_classes", type=int, default=9) # number of GMM components
     parser.add_argument("--lambda1", type=float, default=1e-1)
-    parser.add_argument("--lambda2", type=float, default=1e-4)
     parser.add_argument('--gmm_on', dest='gmm_on', action='store_true')
     parser.set_defaults(even=False, bidirectional=False, noisify=False,
                         period_fold=False)
@@ -192,7 +194,7 @@ def get_run_id(model_type, size, num_layers, lr, drop_frac=0.0, embedding=None,
         estsize = "_".join(str(s) for s in estnet_size)
         run += '_estnet{}_estdrop{}_'.format(estsize, int(100*kwargs['estnet_drop_frac']))
 
-        run += 'l1{}_l2{}'.format(kwargs['lambda1'], kwargs['lambda2']).replace('e-', 'm')
+        run += 'l1{}'.format(kwargs['lambda1']).replace('e-', 'm')
 
     return run
 
@@ -217,11 +219,6 @@ def train_and_log(X, Y, run, model, nb_epoch, batch_size, lr, loss, sim_type, me
     optimizer = Adam(lr=lr if not finetune_rate else finetune_rate)
     if gpu_frac is not None:
         limited_memory_session(gpu_frac)
-
-    # When GMM is on, the keras model is compiled in survey_rnngmm_classifier.main
-    if (not kwargs['gmm_on']):
-      model.compile(optimizer=optimizer, loss=loss, metrics=metrics,
-                    sample_weight_mode='temporal' if sample_weight is not None else None)
 
     log_dir = os.path.join(os.getcwd(), 'keras_logs', sim_type, run)
     weights_path = os.path.join(log_dir, 'weights.h5')
