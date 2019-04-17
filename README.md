@@ -4,8 +4,8 @@
 This is the official implementation accompanying the paper "Deep Neural Network Classifier for Variable Stars with Novelty Detection Capability" (arXiv:).
 Our motivation was to explore the application of deep neural networks for more than one single task beyond variable classification. 
 
-The code for the recurrent neural network-based autoencoder was taken from the official implementation by B. Naul et al (2018) [View Code](https://github.com/bnaul/IrregularTimeSeriesAutoencoderPaper) \[[Read Paper]\](https://arxiv.org/abs/1711.10609).
-There is no publicly available official implementation of the Deep Autoencoding Gaussian Mixture Model (DAGMM) by B. Zong et al. (2018) [Read Paper](https://openreview.net/pdf?id=BJJLHbb0-). Our estimation network and Gaussian Mixture Model (GMM) implementation have benefited tremendously from the unofficial implementations by [danieltan07](https://github.com/danieltan07/dagmm), [Newcomer520](https://github.com/Newcomer520/tf-dagmm), and in particular [tnakae](https://github.com/tnakae/DAGMM). 
+The code for the recurrent neural network-based autoencoder was taken from the official implementation by B. Naul et al (2018) \[[View Code](https://github.com/bnaul/IrregularTimeSeriesAutoencoderPaper), [Read Paper](https://arxiv.org/abs/1711.10609)\].
+There is no publicly available official implementation of the Deep Autoencoding Gaussian Mixture Model (DAGMM) by B. Zong et al. (2018) \[[Read Paper](https://openreview.net/pdf?id=BJJLHbb0-)\]. Our estimation network and Gaussian Mixture Model (GMM) implementation have benefited tremendously from the unofficial implementations by [danieltan07](https://github.com/danieltan07/dagmm), [Newcomer520](https://github.com/Newcomer520/tf-dagmm), and in particular [tnakae](https://github.com/tnakae/DAGMM). 
 
 ## Requirements
 We have trained the models with the following packages:
@@ -16,7 +16,7 @@ We have trained the models with the following packages:
 - sklearn (0.19.1)
 
 ## Dataset
-We have made extensive use of the All-Sky Automated Survey for Supernova (ASAS-SN) Variable Stars Database [Visit database](https://asas-sn.osu.edu/variables) [Read Paper](https://arxiv.org/abs/1809.07329).
+We have made extensive use of the All-Sky Automated Survey for Supernova (ASAS-SN) Variable Stars Database \[[Visit database](https://asas-sn.osu.edu/variables), [Read Paper](https://arxiv.org/abs/1809.07329)\].
 An example dataset of ASAS-SN variable star light curves is included under `./data/asassn/sample.pkl`.
 
 ## File descriptions
