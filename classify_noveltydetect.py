@@ -235,7 +235,7 @@ def main(args=None):
     gamma_train = estnet_model.predict({'main_input': X_train, 'aux_input': np.delete(X_train, 1, axis=2), 'support_input':supports_train})
     gamma_valid = estnet_model.predict({'main_input': X_valid, 'aux_input': np.delete(X_valid, 1, axis=2), 'support_input':supports_valid})
   else:
-    est_net = EstimationNet(args.estnet_size, K.tanh)
+    est_net = EstimationNet(args.estnet_size, args.num_classes, K.tanh)
 
   # Fit data to gmm if joint, train gmm if sequential
   gmm = GMM(args.num_classes, args.embedding+num_additional)

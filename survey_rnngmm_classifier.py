@@ -192,7 +192,7 @@ def main(args=None):
                     sample_weight_mode='temporal')
 
     else: 
-      est_net = EstimationNet(args.estnet_size, K.tanh)
+      est_net = EstimationNet(args.estnet_size, args.num_classes, K.tanh)
 
       # extract x_i and hat{x}_{i} for reconstruction error feature calculations
       main_input_slice = Lambda(lambda x: x[:,:,1], name="main_slice")(main_input)
