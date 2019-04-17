@@ -62,9 +62,7 @@ def main(args=None):
 
     np.random.seed(0)
 
-    # Avoid floating-point underflow from GMM parameters
-    if (args.embedding >= 16):
-      K.set_floatx('float64')
+    K.set_floatx('float64')
 
     run = ku.get_run_id(**vars(args))
 
