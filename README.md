@@ -1,7 +1,7 @@
 # Neural network classifier and novelty detector for unevenly sampled light curves of variable stars
-<![![DOI](https://zenodo.org/badge/90776775.svg)](https://zenodo.org/badge/latestdoi/90776775)!>
+[![DOI](https://zenodo.org/badge/DOI/10.3847/2041-8213/ab212c.svg)](https://doi.org/10.3847/2041-8213/ab212c)
 
-This is the official implementation accompanying the paper "Deep Neural Network Classifier for Variable Stars with Novelty Detection Capability" (arXiv:).
+This is the official implementation accompanying the paper "Deep Neural Network Classifier for Variable Stars with Novelty Detection Capability" (arXiv: https://arxiv.org/abs/1905.05767).
 Our motivation was to explore the application of deep neural networks for more than one single task beyond variable classification. 
 
 The code for the recurrent neural network-based autoencoder was taken from the official implementation by B. Naul et al (2018) \[[View Code](https://github.com/bnaul/IrregularTimeSeriesAutoencoderPaper), [Read Paper](https://arxiv.org/abs/1711.10609)\].
