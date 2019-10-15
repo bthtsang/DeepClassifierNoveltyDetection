@@ -312,6 +312,12 @@ def main(args=None):
   energy_unknown = [e for i, e in enumerate(energy_new) if (true_flags[i] == 1)]
   print ("known/unknown", len(energy_known), len(energy_unknown))
 
+  gmm_phi = K.eval(gmm.phi)
+  gmm_mu = K.eval(gmm.mu)
+  gmm_sigma = K.eval(gmm.sigma)
+
+  np.savez(log_dir+'/gmm_parameters.npz', gmm_phi=gmm_phi, gmm_mu=gmm_mu, gmm_sigma=gmm_sigma)
+
   percentile_list = [80.0, 95.0]
 
   txtfilename = log_dir + "/novel_detection_scores.txt"
