@@ -116,7 +116,10 @@ def main(args=None):
 
   if args.ss_resid:
     top = [lc for lc in top if lc.ss_resid <= args.ss_resid]
+
+  if args.class_prob:
     top = [lc for lc in top if float(class_probability[lc.name.split("/")[-1][2:-4]]) >= 0.9]
+    #top = [lc for lc in top if lc.class_prob >= args.class_prob]
 
   split = [el for lc in top for el in lc.split(args.n_min, args.n_max)]
   split_new = [el for lc in new for el in lc.split(args.n_min, args.n_max)]
