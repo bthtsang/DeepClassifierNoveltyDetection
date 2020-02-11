@@ -128,7 +128,8 @@ def main(args=None):
     for lc in split:
       lc.period_fold()
     for lc in split_new:
-      lc.period_fold()
+      if lc.p is not None:
+        lc.period_fold()
         
   X_list = [np.c_[lc.times, lc.measurements, lc.errors] for lc in split]
   classnames, indices = np.unique([lc.label for lc in split], return_inverse=True)
@@ -136,12 +137,10 @@ def main(args=None):
   periods = np.array([np.log10(lc.p) for lc in split])
   periods = periods.reshape(len(split), 1)
 
-  class_prob = np.array([float(class_probability[lc.name.split("/")[-1][2:-4]]) for lc in split])
   X_raw = pad_sequences(X_list, value=0., dtype='float64', padding='post')
   X, means, scales, wrong_units, X_err = preprocess(X_raw, args.m_max)
   y = y[~wrong_units]
   periods = periods[~wrong_units]
-  class_prob = class_prob[~wrong_units]
 
   train, valid = list(StratifiedKFold(n_splits=5, shuffle=True, random_state=SEED).split(X, y))[0]
 
@@ -150,7 +149,6 @@ def main(args=None):
   means_train = means[train]
   scales_train = scales[train]
   periods_train = periods[train]
-  class_prob_train = class_prob[train]
   energy_dummy = np.zeros((X_train.shape[0], 1))
 
   X_valid = X[valid]
@@ -158,7 +156,6 @@ def main(args=None):
   means_valid = means[valid]
   scales_valid = scales[valid]
   periods_valid = periods[valid]
-  class_prob_valid = class_prob[valid]
   energy_dummy_valid = np.zeros((X_valid.shape[0], 1))
 
   supports_train = np.concatenate((means_train, scales_train, periods_train), axis=1)
@@ -168,7 +165,7 @@ def main(args=None):
   X_list_new = [np.c_[lc.times, lc.measurements, lc.errors] for lc in split_new]
   classnames_new, indices_new = np.unique([lc.label for lc in split_new], return_inverse=True)
   y_new = classnames_new[indices_new]
-  periods_new = np.array([np.log10(lc.p) for lc in split_new])
+  periods_new = np.array([np.log10(lc.p) if lc.p is not None else 99.0 for lc in split_new])
   periods_new = periods_new.reshape(len(split_new), 1)
 
   X_raw_new = pad_sequences(X_list_new, value=0., dtype='float64', padding='post')
@@ -352,7 +349,7 @@ def main(args=None):
   ax = fig.add_subplot(111)
   plt.hist(energy_train, nbin, normed=True, color='black',
            histtype='step', label='Training Set')
-  plt.hist(energy_unknown, nbin, normed=True, color='blue',
+  plt.hist(np.isfinite(energy_unknown), nbin, normed=True, color='blue',
            histtype='step', label='Unknown Classes')
   plt.hist(energy_known, nbin, normed=True, color='green',
            histtype='step', label='Known Classes')
