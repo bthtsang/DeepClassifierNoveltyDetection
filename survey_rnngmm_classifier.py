@@ -99,6 +99,7 @@ def main(args=None):
         combined = [lc for lc in combined if lc.ss_resid <= args.ss_resid]
     if args.class_prob:
         combined = [lc for lc in combined if float(class_probability[lc.name.split("/")[-1][2:-4]]) >= args.class_prob]
+        #combined = [lc for lc in combined if lc.class_prob >= args.class_prob]
 
     # Select only superclasses for training
     combined = [lc for lc in combined if lc.label in top_classes]
