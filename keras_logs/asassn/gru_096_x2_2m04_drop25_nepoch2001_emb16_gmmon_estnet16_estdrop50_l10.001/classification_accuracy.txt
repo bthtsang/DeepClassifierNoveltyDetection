@@ -1,0 +1,8 @@
+===== Classification Accuracy =====
+Neural Network Classifier: 0.99
+==========================
+Random Forest Classifier
+Training accuracy: 100.00%
+Validation accuracy: 91.05%
+Best RF {'criterion': 'entropy', 'max_features': 0.3, 'min_samples_leaf': 1, 'n_estimators': 250}
+==========================

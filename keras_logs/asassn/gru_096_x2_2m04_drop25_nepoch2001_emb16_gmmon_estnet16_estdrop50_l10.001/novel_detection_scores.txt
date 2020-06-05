@@ -1,0 +1,8 @@
+Detecting new using 80.0% percentile 
+ Precision = 0.702
+ Recall    = 0.895
+ F1-Score  = 0.787
+Detecting new using 95.0% percentile 
+ Precision = 0.890
+ Recall    = 0.734
+ F1-Score  = 0.805
